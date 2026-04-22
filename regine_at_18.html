@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Playables SDK -->
+<script>// Playables SDK v1.0.0
+// Game lifecycle bridge: rAF-based game-ready detection + event communication
+(function() {
+  'use strict';
+
+  // Idempotency: skip if already initialized (e.g., server-side injection
+  // followed by client-side inject-javascript via the Bloks webview component).
+  if (window.playablesSDK) return;
+
+  var HANDLER_NAME = 'playablesGameEventHandler';
+  var ANDROID_BRIDGE_NAME = '_MetaPlayablesBridge';
+  var RAF_FRAME_THRESHOLD = 3;
+
+  var gameReadySent = false;
+  var firstInteractionSent = false;
+  var errorSent = false;
+  var frameCount = 0;
+  var originalRAF = window.requestAnimationFrame;
+
+  // --- Transport Layer ---
+
+  function hasIOSBridge() {
+    return !!(window.webkit &&
+              window.webkit.messageHandlers &&
+              window.webkit.messageHandlers[HANDLER_NAME]);
+  }
+
+  function hasAndroidBridge() {
+    return !!(window[ANDROID_BRIDGE_NAME] &&
+              typeof window[ANDROID_BRIDGE_NAME].postEvent === 'function');
+  }
+
+  function isInIframe() {
+    return !!(window.parent && window.parent !== window);
+  }
+
+  function sendEvent(eventName, payload) {
+    var message = {
+      type: eventName,
+      payload: payload || {},
+      timestamp: Date.now()
+    };
+
+    if (hasIOSBridge()) {
+      try {
+        window.webkit.messageHandlers[HANDLER_NAME].postMessage(message);
+      } catch (e) { /* ignore */ }
+      return;
+    }
+
+    if (hasAndroidBridge()) {
+    try {
+      var p = payload || {};
+      p.__secureToken = window.__fbAndroidBridgeAuthToken || '';
+      window[ANDROID_BRIDGE_NAME].postEvent(
+        eventName,
+        JSON.stringify(p)
+      );
+    } catch (e) { /* ignore */ }
+    return;
+  }
+
+    if (isInIframe()) {
+      try {
+        window.parent.postMessage(message, '*');
+      } catch (e) { /* ignore */ }
+      return;
+    }
+  }
+
+  // --- rAF Game-Ready Detection ---
+
+  function onFrame() {
+    if (gameReadySent) return;
+
+    frameCount++;
+    if (frameCount >= RAF_FRAME_THRESHOLD) {
+      gameReadySent = true;
+      sendEvent('game_ready', {
+        frame_count: frameCount,
+        detected_at: Date.now()
+      });
+      return;
+    }
+
+    originalRAF.call(window, onFrame);
+  }
+
+  if (originalRAF) {
+    window.requestAnimationFrame = function(callback) {
+      if (!gameReadySent) {
+        return originalRAF.call(window, function(timestamp) {
+          frameCount++;
+          if (frameCount >= RAF_FRAME_THRESHOLD && !gameReadySent) {
+            gameReadySent = true;
+            sendEvent('game_ready', {
+              frame_count: frameCount,
+              detected_at: Date.now()
+            });
+          }
+          callback(timestamp);
+        });
+      }
+      return originalRAF.call(window, callback);
+    };
+  }
+
+  // --- First User Interaction Detection ---
+
+  function setupFirstInteractionDetection() {
+    var events = ['touchstart', 'mousedown', 'keydown'];
+
+    function onFirstInteraction() {
+      if (firstInteractionSent) return;
+      firstInteractionSent = true;
+      sendEvent('user_interaction_start', null);
+
+      for (var i = 0; i < events.length; i++) {
+        document.removeEventListener(events[i], onFirstInteraction, true);
+      }
+    }
+
+    for (var i = 0; i < events.length; i++) {
+      document.addEventListener(events[i], onFirstInteraction, true);
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupFirstInteractionDetection);
+  } else {
+    setupFirstInteractionDetection();
+  }
+
+  // --- Auto Error Capture ---
+
+  window.addEventListener('error', function(event) {
+    if (errorSent) return;
+    errorSent = true;
+    sendEvent('error', {
+      message: event.message || 'Unknown error',
+      source: event.filename || '',
+      lineno: event.lineno || 0,
+      colno: event.colno || 0,
+      auto_captured: true
+    });
+  });
+
+  window.addEventListener('unhandledrejection', function(event) {
+    if (errorSent) return;
+    errorSent = true;
+    var reason = event.reason;
+    sendEvent('error', {
+      message: (reason instanceof Error) ? reason.message : String(reason),
+      type: 'unhandled_promise_rejection',
+      auto_captured: true
+    });
+  });
+
+  // --- Public API ---
+
+  window.playablesSDK = {
+    complete: function(score) {
+      sendEvent('game_ended', {
+        score: score,
+        completed: true
+      });
+    },
+
+    error: function(message) {
+      if (errorSent) return;
+      errorSent = true;
+      sendEvent('error', {
+        message: message || 'Unknown error',
+        auto_captured: false
+      });
+    },
+
+    sendEvent: function(eventName, payload) {
+      if (!eventName || typeof eventName !== 'string') return;
+      sendEvent(eventName, payload);
+    }
+  };
+
+  // Kick off rAF detection in case no game code calls rAF immediately
+  if (originalRAF) {
+    originalRAF.call(window, onFrame);
+  }
+})();</script>
+<script>window.Intl=window.Intl||{};Intl.t=function(s){return(Intl._locale&&Intl._locale[s])||s;};</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Regine's 18th Birthday — A Night of Grace & Dreams</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Montserrat:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --deep-purple: #1a0b2e;
+            --royal-purple: #9370DB;
+            --soft-lavender: #D6C2F0;
+            --gold: #c9a86b;
+            --gold-glow: rgba(201, 168, 107, 0.5);
+            --white: #ffffff;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            background-color: var(--deep-purple);
+            font-family: 'Montserrat', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 40px 15px 80px;
+            min-height: 100vh;
+            color: var(--white);
+            overflow-x: hidden;
+        }
+
+        .background {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(ellipse at top, #5a3a8c 0%, #2E1A47 40%, #0f0420 100%);
+            z-index: -2;
+            overflow: hidden;
+        }
+
+        .aurora {
+            position: absolute;
+            width: 60vmax;
+            height: 60vmax;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(147,112,219,0.3) 0%, transparent 60%);
+            filter: blur(60px);
+            animation: float 25s infinite ease-in-out;
+        }
+        .aurora:nth-child(1) { top: -20%; left: -20%; animation-delay: 0s; }
+        .aurora:nth-child(2) { bottom: -30%; right: -10%; background: radial-gradient(circle, rgba(201,168,107,0.2) 0%, transparent 60%); animation-delay: -8s; }
+        .aurora:nth-child(3) { top: 30%; right: 20%; width: 40vmax; height: 40vmax; animation-delay: -15s; }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(30px, -40px) scale(1.1); }
+            66% { transform: translate(-20px, 30px) scale(0.95); }
+        }
+
+        .invitation-card {
+            position: relative;
+            background: linear-gradient(180deg, rgba(46, 26, 71, 0.65), rgba(26, 11, 46, 0.75));
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(147, 112, 219, 0.25);
+            padding: clamp(2rem, 5vw, 3.5rem);
+            border-radius: 28px;
+            text-align: center;
+            max-width: 640px;
+            width: 100%;
+            box-shadow: 0 30px 80px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08);
+            animation: fadeIn 1.2s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .crown {
+            width: 56px;
+            height: 56px;
+            margin: 0 auto 12px;
+            opacity: 0.9;
+            filter: drop-shadow(0 0 12px var(--gold-glow));
+        }
+
+        h2 {
+            font-weight: 300;
+            font-size: 0.85rem;
+            letter-spacing: 3.5px;
+            text-transform: uppercase;
+            color: var(--soft-lavender);
+            margin-bottom: 8px;
+        }
+
+        h1 {
+            font-family: 'Dancing Script', cursive;
+            font-size: clamp(4.2rem, 13vw, 6.5rem);
+            background: linear-gradient(180deg, #fff8e7 0%, var(--gold) 70%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin: 0 0 8px;
+            line-height: 1;
+            text-shadow: 0 0 40px rgba(201,168,107,0.3);
+        }
+
+        .age-badge {
+            display: inline-block;
+            font-family: 'Playfair Display', serif;
+            font-size: 0.9rem;
+            letter-spacing: 2px;
+            color: var(--deep-purple);
+            background: linear-gradient(135deg, var(--gold), #e8d4a8);
+            padding: 6px 16px;
+            border-radius: 100px;
+            font-weight: 700;
+            box-shadow: 0 4px 15px rgba(201,168,107,0.3);
+            margin-bottom: 22px;
+        }
+
+        .caption {
+            font-family: 'Playfair Display', serif;
+            font-style: italic;
+            font-size: 1.08rem;
+            color: #eaddff;
+            line-height: 1.7;
+            margin: 0 auto 28px;
+            max-width: 90%;
+            opacity: 0.95;
+        }
+
+        .caption-highlight {
+            color: var(--gold);
+            font-weight: 700;
+            font-style: normal;
+        }
+
+        .countdown-wrap {
+            margin: 28px 0 10px;
+        }
+        .countdown-label {
+            font-size: 0.7rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--soft-lavender);
+            margin-bottom: 10px;
+            opacity: 0.8;
+        }
+        .countdown {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+        }
+        .countdown > div {
+            background: rgba(0,0,0,0.25);
+            border: 1px solid rgba(147,112,219,0.2);
+            border-radius: 14px;
+            padding: 12px 10px;
+            min-width: 70px;
+            backdrop-filter: blur(10px);
+        }
+        .countdown span {
+            display: block;
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: var(--white);
+            line-height: 1;
+            font-variant-numeric: tabular-nums;
+        }
+        .countdown label {
+            font-size: 0.65rem;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--soft-lavender);
+            margin-top: 4px;
+            display: block;
+        }
+
+        .details {
+            border-top: 1px solid rgba(147, 112, 219, 0.25);
+            border-bottom: 1px solid rgba(147, 112, 219, 0.25);
+            padding: 26px 0;
+            margin: 32px 0;
+            background: linear-gradient(90deg, transparent, rgba(147, 112, 219, 0.12), transparent);
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+
+        .info-row strong { 
+            display: block;
+            color: var(--gold); 
+            font-size: 0.72rem; 
+            letter-spacing: 2px; 
+            opacity: 0.9;
+            font-weight: 600;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+        }
+        .info-row p { 
+            font-size: 1.05rem; 
+            font-weight: 500; 
+            line-height: 1.5;
+        }
+
+        .entourage-section { margin-top: 38px; text-align: left; }
+        .entourage-title {
+            text-align: center;
+            font-family: 'Playfair Display', serif;
+            font-size: 1.3rem;
+            margin-bottom: 18px;
+            color: var(--soft-lavender);
+            letter-spacing: 1px;
+        }
+
+        .collapsible {
+            background: rgba(147, 112, 219, 0.15);
+            color: var(--white);
+            cursor: pointer;
+            padding: 16px 20px;
+            width: 100%;
+            border: 1px solid rgba(214, 194, 240, 0.18);
+            text-align: left;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+            border-radius: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        .collapsible:after {
+            content: '+';
+            color: var(--gold);
+            font-weight: 300;
+            font-size: 1.4rem;
+            transition: transform 0.3s;
+        }
+
+        .active:after {
+            content: '−';
+            transform: rotate(180deg);
+        }
+
+        .active, .collapsible:hover { 
+            background: rgba(147, 112, 219, 0.28); 
+            border-color: rgba(201,168,107,0.5);
+            transform: translateY(-1px);
+        }
+
+        .content {
+            padding: 0 22px;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.45s cubic-bezier(0.4,0,0.2,1);
+            background: rgba(0, 0, 0, 0.18);
+            margin-bottom: 12px;
+            border-radius: 0 0 14px 14px;
+            margin-top: -10px;
+            border: 1px solid transparent;
+            border-top: none;
+        }
+        .active + .content {
+            border-color: rgba(147,112,219,0.18);
+        }
+
+        .content ul {
+            padding: 20px 0 22px;
+            list-style: none;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px 20px;
+        }
+
+        .content li { 
+            font-size: 0.9rem; 
+            color: #e0d4f5;
+            position: relative;
+            padding-left: 16px;
+            font-weight: 400;
+        }
+
+        .content li::before {
+            content: '✦';
+            position: absolute;
+            left: 0;
+            color: var(--gold);
+            font-size: 0.7rem;
+            top: 2px;
+            opacity: 0.8;
+        }
+
+        .btn-rsvp {
+            background: linear-gradient(135deg, #b793ec, #7b5ac7 60%, #5b3f9e);
+            border: none;
+            color: #ffffff;
+            padding: 18px 45px;
+            text-transform: uppercase;
+            letter-spacing: 2.5px;
+            cursor: pointer;
+            margin-top: 36px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            border-radius: 50px;
+            width: 100%;
+            transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+            box-shadow: 0 12px 30px rgba(123, 90, 199, 0.45), inset 0 1px 0 rgba(255,255,255,0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-rsvp:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 18px 40px rgba(123, 90, 199, 0.6), inset 0 1px 0 rgba(255,255,255,0.2);
+        }
+
+        .btn-rsvp:disabled { 
+            background: #3a2a5a; 
+            color: #9d8bb8; 
+            cursor: not-allowed; 
+            box-shadow: none;
+            transform: none;
+        }
+
+        .sparkle {
+            position: absolute;
+            background: var(--gold);
+            border-radius: 50%;
+            opacity: 0;
+            animation: twinkle var(--duration) infinite ease-in-out;
+            box-shadow: 0 0 10px var(--gold);
+            pointer-events: none;
+        }
+
+        @keyframes twinkle {
+            0%,100% { opacity: 0; transform: scale(0.5); }
+            50% { opacity: 0.8; transform: scale(1); }
+        }
+
+        /* Modal */
+        .modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(8,2,18,0.8);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            padding: 20px;
+        }
+        .modal.active { opacity: 1; pointer-events: auto; }
+        .modal-content {
+            background: linear-gradient(180deg, #2d1a4d, #1c0c33);
+            border: 1px solid rgba(147,112,219,0.3);
+            border-radius: 20px;
+            padding: 28px;
+            width: 100%;
+            max-width: 380px;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.7);
+            transform: scale(0.95);
+            transition: transform 0.3s;
+            text-align: center;
+        }
+        .modal.active .modal-content { transform: scale(1); }
+        .modal-content h3 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.5rem;
+            margin-bottom: 8px;
+            color: var(--white);
+        }
+        .modal-content p {
+            color: var(--soft-lavender);
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+        }
+        .modal-content input {
+            width: 100%;
+            padding: 14px 16px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(147,112,219,0.3);
+            border-radius: 12px;
+            color: white;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1rem;
+            outline: none;
+            transition: border 0.2s;
+            margin-bottom: 18px;
+        }
+        .modal-content input:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(201,168,107,0.2); }
+        .modal-actions { display: flex; gap: 10px; }
+        .modal-actions button {
+            flex: 1;
+            padding: 12px;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            font-family: 'Montserrat', sans-serif;
+            transition: all 0.2s;
+        }
+        #cancelBtn { background: rgba(255,255,255,0.08); color: #d1c4e9; }
+        #cancelBtn:hover { background: rgba(255,255,255,0.14); }
+        #confirmBtn { background: linear-gradient(135deg, var(--gold), #b7935f); color: #1a0b2e; }
+        #confirmBtn:hover { filter: brightness(1.1); }
+
+        @media (max-width: 540px) {
+            body { padding: 24px 12px 60px; }
+            .details { grid-template-columns: 1fr; gap: 18px; text-align: center; }
+            .content ul { grid-template-columns: 1fr; }
+            .countdown > div { min-width: 62px; padding: 10px 8px; }
+            .countdown span { font-size: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="background" id="bg">
+        <div class="aurora"></div>
+        <div class="aurora"></div>
+        <div class="aurora"></div>
+    </div>
+
+    <main class="invitation-card">
+        <svg class="crown" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M8 24L16 12L26 20L32 8L38 20L48 12L56 24V40H8V24Z" stroke="#c9a86b" stroke-width="2" fill="rgba(201,168,107,0.15)"/>
+            <circle cx="16" cy="12" r="2.5" fill="#c9a86b"/><circle cx="32" cy="8" r="2.5" fill="#c9a86b"/><circle cx="48" cy="12" r="2.5" fill="#c9a86b"/>
+        </svg>
+
+        <h2>You are cordially invited to celebrate</h2>
+        <h1>Regine</h1>
+        <div class="age-badge">EIGHTEENTH BIRTHDAY</div>
+        
+        <p class="caption">
+            Stepping into the light of adulthood with grace, dreams, and endless possibilities. <br>
+            Join me as I unfold my wings and begin this <span class="caption-highlight">beautiful new chapter</span>.
+        </p>
+
+        <div class="countdown-wrap">
+            <div class="countdown-label">Counting down to my special day</div>
+            <div class="countdown" id="countdown">
+                <div><span id="days">00</span><label>Days</label></div>
+                <div><span id="hours">00</span><label>Hours</label></div>
+                <div><span id="minutes">00</span><label>Mins</label></div>
+                <div><span id="seconds">00</span><label>Secs</label></div>
+            </div>
+        </div>
+        
+        <div class="details">
+            <div class="info-row">
+                <strong>Date & Time</strong>
+                <p>May 28, 2026<br>Thursday • 4:00 PM</p>
+            </div>
+            <div class="info-row">
+                <strong>Venue</strong>
+                <p>Mabini Residence<br>Purok 4 Gabawan, Daraga, Albay</p>
+            </div>
+        </div>
+
+        <div class="entourage-section">
+            <h3 class="entourage-title">Celebration Entourage</h3>
+            
+            <button class="collapsible" aria-expanded="false">18 Roses</button>
+            <div class="content"><ul><li>John Batagon</li><li>Philip Magalona</li><li>Ryan Balantes</li><li>Nicholas Andes</li><li>John Lloyd Magalona</li><li>Jake Bolo</li><li>Stephen Asejo</li><li>Gian lance Mantes</li><li>Edrian Lomafia</li><li>Justine Porteria</li><li>Jean Montilla</li><li>Dave Buere</li><li>Mathew Cantal</li><li>Felix Mendaza</li><li>James Macalinao</li><li>Ericson Mabini</li><li>Jeffrey Mabini</li><li>Jefferson Mabini</li></ul></div>
+
+            <button class="collapsible" aria-expanded="false">18 Candles</button>
+            <div class="content"><ul><li>Princess Mantes</li><li>Krisalen Mabini</li><li>Sunshine Nacor</li><li>Jasmine Nacor</li><li>Althea Molar</li><li>Kendra Rain Dino</li><li>Jelaika Batagon</li><li>Clariza Alegre</li><li>Samantha Tolentino</li><li>AC Millena</li><li>Janel Sanchez</li><li>Nayumie Jacob</li><li>Rhemiella Maso</li><li>Cyrelle Barba</li><li>Leianne Masarate</li><li>Karyl Bergado</li><li>Janina Cuela</li><li>Ciana Peralta</li></ul></div>
+
+            <button class="collapsible" aria-expanded="false">18 Treasures</button>
+            <div class="content"><ul><li>Kandisse Morales</li><li>Nikki Marantal</li><li>Luvi Broñosa</li><li>Rachelle Ortiz</li><li>Maria Delumen</li><li>Cristina Santos</li><li>Jonalyn Atos</li><li>Michelle Bartolay</li><li>Charo Llantino</li><li>Luz Pablo</li><li>Liz Belleza</li><li>Lilibeth Apuyan</li><li>Analyn Presbetiro</li><li>Merlinda Llamado</li><li>Richelle Mantes</li><li>Jenariza Delumen</li><li>Faith Payneta</li><li>Meljoy Llamasares</li></ul></div>
+
+            <button class="collapsible" aria-expanded="false">18 Shots</button>
+            <div class="content"><ul><li>Rose Marcellana</li><li>Cyril Batagon</li><li>Angela Abiog</li><li>Jessa Mae Nacor</li><li>Kenneth Arimado</li><li>Justin Arimado</li><li>Rusty Claridad</li><li>Lorenzo Llagas</li><li>Dave Andes</li><li>CJ Cimanes</li><li>Victor Bueno</li><li>Jellian Celario</li><li>Ezra Brimbuela</li><li>Maricris Arenas</li><li>Jay R Noleal</li><li>Raymart Milan</li><li>Mark Francis Maraño</li><li>Zyrem Monasterial</li></ul></div>
+
+            <button class="collapsible" aria-expanded="false">14 Bills</button>
+            <div class="content"><ul><li>Ariell Albaytar</li><li>Noli Andes</li><li>Noli Batagon</li><li>Joshua Atienza</li><li>Agripino Llabanes</li><li>Elvis Batagon</li><li>Christopher Ascaño</li><li>Jujithd Albaytar</li><li>Andrew Mantes</li><li>Johnson Bulacsao</li><li>Czarina Arcos</li><li>Richard Nacor</li><li>Marlon Lorilla</li><li>Jayson Berna</li></ul></div>
+        </div>
+
+        <button class="btn-rsvp" id="rsvpBtn">Reserve Your Seat</button>
+        <p style="font-size:0.75rem; color:#b9a7d6; margin-top:12px; opacity:0.7;">Formal attire • Lavender & Gold theme</p>
+    </main>
+
+    <div class="modal" id="rsvpModal">
+        <div class="modal-content">
+            <h3>Will you celebrate with me?</h3>
+            <p>Kindly confirm your attendance for Regine's 18th</p>
+            <input type="text" id="guestName" placeholder="Your Full Name" autocomplete="name">
+            <div class="modal-actions">
+                <button id="cancelBtn" type="button">Not Now</button>
+                <button id="confirmBtn" type="button">Confirm RSVP</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxHfcQN9zbfMBbsFJujBRCx6Ts7-jv_PEq-GI5HyJmNKlBxVCxpEDI4YVPpDUHvnRbBjg/exec";
+        const rsvpBtn = document.getElementById('rsvpBtn');
+        const modal = document.getElementById('rsvpModal');
+        const guestInput = document.getElementById('guestName');
+
+        // Check existing RSVP
+        window.addEventListener('DOMContentLoaded', () => {
+            const saved = localStorage.getItem("regine_bday_rsvp");
+            if (saved) {
+                rsvpBtn.innerText = "✓ RSVP Confirmed";
+                rsvpBtn.disabled = true;
+            }
+            startCountdown();
+        });
+
+        // Collapsibles
+        document.querySelectorAll(".collapsible").forEach(btn => {
+            btn.addEventListener("click", function() {
+                const isActive = this.classList.contains('active');
+                document.querySelectorAll('.collapsible').forEach(b => {
+                    b.classList.remove('active');
+                    b.setAttribute('aria-expanded', 'false');
+                    b.nextElementSibling.style.maxHeight = null;
+                });
+                if (!isActive) {
+                    this.classList.add("active");
+                    this.setAttribute('aria-expanded', 'true');
+                    const content = this.nextElementSibling;
+                    content.style.maxHeight = content.scrollHeight + "px";
+                }
+            });
+        });
+
+        // Modal
+        rsvpBtn.addEventListener('click', () => {
+            if (rsvpBtn.disabled) return;
+            modal.classList.add('active');
+            setTimeout(() => guestInput.focus(), 100);
+        });
+        document.getElementById('cancelBtn').addEventListener('click', () => modal.classList.remove('active'));
+        modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.remove('active'); });
+
+        async function submitRSVP() {
+            const name = guestInput.value.trim();
+            if (!name) { guestInput.focus(); guestInput.style.borderColor = '#ff6b6b'; setTimeout(()=>guestInput.style.borderColor='', 1500); return; }
+
+            const confirmBtn = document.getElementById('confirmBtn');
+            confirmBtn.disabled = true;
+            confirmBtn.innerText = 'Saving...';
+
+            try {
+                await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    body: JSON.stringify({ name: name, date: new Date().toISOString() })
+                });
+                localStorage.setItem("regine_bday_rsvp", name);
+                modal.classList.remove('active');
+                rsvpBtn.innerText = "✓ RSVP Confirmed — See You!";
+                rsvpBtn.disabled = true;
+                triggerConfetti();
+            } catch (e) {
+                alert("Couldn't save RSVP. Please try again.");
+                confirmBtn.disabled = false;
+                confirmBtn.innerText = 'Confirm RSVP';
+            }
+        }
+        document.getElementById('confirmBtn').addEventListener('click', submitRSVP);
+        guestInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') submitRSVP(); });
+
+        // Countdown
+        function startCountdown() {
+            const target = new Date('2026-05-28T16:00:00+08:00').getTime();
+            const d = document.getElementById('days'), h = document.getElementById('hours'), m = document.getElementById('minutes'), s = document.getElementById('seconds');
+            setInterval(() => {
+                const now = Date.now();
+                const diff = target - now;
+                if (diff <= 0) { d.textContent = h.textContent = m.textContent = s.textContent = '00'; return; }
+                d.textContent = String(Math.floor(diff / 86400000)).padStart(2,'0');
+                h.textContent = String(Math.floor(diff % 86400000 / 3600000)).padStart(2,'0');
+                m.textContent = String(Math.floor(diff % 3600000 / 60000)).padStart(2,'0');
+                s.textContent = String(Math.floor(diff % 60000 / 1000)).padStart(2,'0');
+            }, 1000);
+        }
+
+        // Confetti
+        function triggerConfetti() {
+            const colors = ['#c9a86b', '#9370DB', '#D6C2F0', '#ffffff'];
+            for(let i=0; i<80; i++) {
+                setTimeout(() => {
+                    const p = document.createElement('div');
+                    p.textContent = ['✨','✦','❈'][Math.floor(Math.random()*3)];
+                    p.style.cssText = `position:fixed;left:${Math.random()*100}vw;top:-10px;font-size:${12+Math.random()*18}px;color:${colors[Math.floor(Math.random()*colors.length)]};z-index:999;pointer-events:none;transition:transform 3.5s linear,opacity 3.5s;`;
+                    document.body.appendChild(p);
+                    requestAnimationFrame(()=>{ p.style.transform = `translateY(110vh) rotate(${Math.random()*720}deg)`; p.style.opacity='0'; });
+                    setTimeout(()=>p.remove(), 3600);
+                }, i*35);
+            }
+        }
+
+        // Sparkles
+        const bg = document.getElementById('bg');
+        for (let i = 0; i < 60; i++) {
+            const s = document.createElement('div');
+            s.className = 'sparkle';
+            const size = Math.random() * 3 + 1;
+            s.style.width = s.style.height = size + 'px';
+            s.style.top = Math.random() * 100 + '%';
+            s.style.left = Math.random() * 100 + '%';
+            s.style.setProperty('--duration', Math.random() * 4 + 3 + 's');
+            s.style.animationDelay = Math.random() * 5 + 's'; 
+            bg.appendChild(s);
+        }
+    </script>
+</body>
+</html>
